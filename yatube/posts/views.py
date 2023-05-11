@@ -13,7 +13,7 @@ from .models import Follow, Group, Post
 User = get_user_model()
 
 
-# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="index_page")
+@cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="index_page")
 def index(request: HttpRequest) -> HttpResponse:
     """
     Главная страница.
@@ -29,7 +29,6 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 
 
-# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="group_page")
 def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     """
     Страница Сообщества (объекта Group).
@@ -78,7 +77,7 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     )
 
 
-# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="post_page")
+@cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="post_page")
 def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
     """Страница отдельного поста (объекта Post)."""
 
