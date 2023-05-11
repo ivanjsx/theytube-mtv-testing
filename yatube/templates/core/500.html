@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ title }}
+{% endblock %}
+
+{% block content %}
+
+  <div class="container py-5">     
+    <div class="row justify-content-center">
+      <div class="col-md-8 p-5">
+        
+        <div class="card">
+
+          <div class="card-header">
+            {{ title }}
+          </div>
+          
+          <div class="card-body">
+            <p>{{ custom_message|safe }}</p>
+            <p><a href="{% url "posts:index" %}">Go</a> to the main page</p>
+          </div>
+          
+        </div>
+      
+      </div>
+    </div>
+  </div>  
+
+{% endblock %}

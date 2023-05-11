@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}
+  О технологиях
+{% endblock %}
+
+{% block content %}
+
+  <div class="container py-5">     
+    <div class="row justify-content-center">
+      <div class="col-md-8 p-5">
+        
+        <div class="card">
+
+          <div class="card-header">
+            Технологии внутри проекта
+          </div>
+          
+          <div class="card-body">
+            <p>В порядке убывания сложности</p>
+            <nav>
+              <ul>
+                <li>
+                  <a target="_blank" href="https://djangoproject.com/">
+                    Django
+                  </a>
+                </li>
+                <li>
+                  <a target="_blank" href="https://github.com/django-extensions/django-extensions">
+                    Django extensions
+                  </a>
+                </li>
+                <li>
+                  <a target="_blank" href="https://python.org/">
+                    Python
+                  </a>              
+                </li>
+              </ul>
+            </nav>
+          </div>
+          
+        </div>
+      
+      </div>
+    </div>
+  </div>  
+
+{% endblock %}

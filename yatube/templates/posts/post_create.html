@@ -1,0 +1,37 @@
+{% extends "form.html" %}
+
+{% block title %}
+  {% if request.resolver_match.view_name == "posts:post_edit" %}
+    Редактировать пост
+  {% else %}
+    Новый пост
+  {% endif %}
+{% endblock %}
+
+{% block card_header %}
+  {% if request.resolver_match.view_name == "posts:post_edit" %}
+    Редактировать пост
+  {% else %}
+    Новый пост
+  {% endif %}
+{% endblock %}
+
+{% block form_action_url %}
+  {% if request.resolver_match.view_name == "posts:post_edit" %}
+    {% url "posts:post_edit" post_id %}
+  {% else %}
+    {% url "posts:post_create" %}
+  {% endif %}  
+{% endblock %}"
+
+{% block form_enctype %}multipart/form-data{% endblock %}
+
+{% block submit_area %}  
+  <button type="submit" class="btn btn-primary">
+    {% if request.resolver_match.view_name == "posts:post_edit" %}
+      Сохранить
+    {% else %}
+      Добавить
+    {% endif %}        
+  </button>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "form.html" %}
+
+{% block title %}
+  Зарегистрироваться
+{% endblock %}
+
+{% block card_header %}
+  Зарегистрироваться
+{% endblock %}
+
+{% block form_action_url %}
+  {% url "users:signup" %}
+{% endblock %}"
+
+{% block submit_area %}
+  <button type="submit" class="btn btn-primary">
+    Зарегистрироваться
+  </button>
+{% endblock %}
