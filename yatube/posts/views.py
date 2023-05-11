@@ -227,11 +227,11 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     на которых подписан пользователь.
     """
 
-    following = request.user.following.all().values("author")
-    posts = Post.objects.filter(author__in=following)
+    follower = request.user.follower.all().values("author")
+    posts = Post.objects.filter(author__in=follower)
 
     return render(
         request=request,
-        template_name="posts/following.html",
+        template_name="posts/follow.html",
         context={"page_obj": paginate(request=request, queryset=posts)},
     )

@@ -8,7 +8,7 @@ urlpatterns = [
     path(route="", view=views.index, name="index"),
 
     path(
-        route="following/",
+        route="follow/",
         view=views.follow_index,
         name="follow_index"
     ),

@@ -64,9 +64,9 @@ class PostsURLsTests(TestCase):
         # !!!! а авторизованному пользователю отдают 200.
         # поведение словаря ниже описывает ответ для гостей.
         cls.private_paths_redirect_guests = {
-            "/following/": (
+            "/follow/": (
                 f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/following/"
+                f"?next=/follow/"
             ),
             "/create/": (
                 f"{reverse_lazy(viewname='users:login')}"
@@ -160,7 +160,7 @@ class PostsURLsTests(TestCase):
             f"/profile/{cls.other_user.username}/": "posts/profile.html",
             f"/posts/{cls.own_post.id}/": "posts/post_detail.html",
             f"/posts/{cls.ones_post.id}/": "posts/post_detail.html",
-            "/following/": "users/login.html",
+            "/follow/": "users/login.html",
             "/create/": "users/login.html",
             f"/posts/{cls.own_post.id}/edit/": "users/login.html",
             f"/posts/{cls.ones_post.id}/edit/": "users/login.html",
@@ -189,7 +189,7 @@ class PostsURLsTests(TestCase):
             f"/profile/{cls.other_user.username}/": "posts/profile.html",
             f"/posts/{cls.own_post.id}/": "posts/post_detail.html",
             f"/posts/{cls.ones_post.id}/": "posts/post_detail.html",
-            "/following/": "posts/following.html",
+            "/follow/": "posts/follow.html",
             "/create/": "posts/post_create.html",
             f"/posts/{cls.own_post.id}/edit/": "posts/post_create.html",
             f"/posts/{cls.ones_post.id}/edit/": "posts/post_detail.html",
@@ -233,7 +233,7 @@ class PostsURLsTests(TestCase):
                 viewname="posts:post_detail",
                 kwargs={"post_id": cls.ones_post.id},
             ),
-            "/following/": reverse_lazy(viewname="posts:follow_index"),
+            "/follow/": reverse_lazy(viewname="posts:follow_index"),
             "/create/": reverse_lazy(viewname="posts:post_create"),
             f"/posts/{cls.own_post.id}/edit/": reverse_lazy(
                 viewname="posts:post_edit",
