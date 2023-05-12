@@ -56,6 +56,7 @@ urlpatterns = [
         name="password_reset_done",
     ),
 
+    # TODO fix /auth/password_reset/confirm/ path
     path(
         route="password_reset/confirm/<uidb64>/<token>/",
         view=views.PasswordResetConfirmView.as_view(

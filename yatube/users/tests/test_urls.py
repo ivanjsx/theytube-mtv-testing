@@ -18,6 +18,7 @@ class UsersURLsTests(TestCase):
             username="test_username",
         )
 
+        # TODO refine /auth/password_reset/confirm/ path
         cls.public_paths_status_codes = {
             "/auth/": HTTPStatus.NOT_FOUND,
             "/auth/login/": HTTPStatus.OK,
@@ -41,6 +42,7 @@ class UsersURLsTests(TestCase):
             ),
         }
 
+        # TODO add /auth/password_reset/confirm/ path
         cls.public_paths_templates = {
             "/auth/login/": "users/login.html",
             "/auth/signup/": "users/signup.html",
@@ -56,6 +58,7 @@ class UsersURLsTests(TestCase):
             "/auth/password_change/done/": "users/password_change_done.html",
         }
 
+        # TODO add /auth/password_reset/confirm/ path
         cls.public_names_templates = {
             reverse_lazy(
                 viewname="users:login",

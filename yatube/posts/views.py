@@ -31,6 +31,7 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 
 
+# TODO fix redirection target after login
 @login_required
 def follow_index(request: HttpRequest) -> HttpResponse:
     """
@@ -116,6 +117,7 @@ def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
     )
 
 
+# TODO fix redirection target after login
 @login_required
 def post_create(request: HttpRequest) -> HttpResponse:
     """Создать пост (объект Post) через интерфейс проекта."""
@@ -144,6 +146,7 @@ def post_create(request: HttpRequest) -> HttpResponse:
     )
 
 
+# TODO fix redirection target after login
 @login_required
 def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
     """Редактировать пост (объект Post) через интерфейс проекта."""
@@ -179,6 +182,7 @@ def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
     )
 
 
+# TODO fix redirection target after login
 @login_required
 def add_comment(request: HttpRequest, post_id: int) -> HttpResponse:
     """
@@ -205,6 +209,7 @@ def add_comment(request: HttpRequest, post_id: int) -> HttpResponse:
     )
 
 
+# TODO fix redirection target after login
 @login_required
 def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
     """
@@ -223,6 +228,7 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
                                     kwargs={"username": username}))
 
 
+# TODO fix redirection target after login
 @login_required
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     """

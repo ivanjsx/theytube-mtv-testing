@@ -140,6 +140,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 
+# TODO fix redirection target after login
 LOGIN_URL = "users:login"
 LOGIN_REDIRECT_URL = "posts:index"
 # LOGOUT_REDIRECT_URL = "users:logout"
