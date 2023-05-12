@@ -4,6 +4,7 @@ import tempfile
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.shortcuts import get_object_or_404
 from django.test import Client, TestCase, override_settings
@@ -109,8 +110,12 @@ class PostsFormsTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
+        cache.clear()
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
+
+    def tearDown(self):
+        cache.clear()
 
     def test_post_create_form_shows_correct_fields(self):
         """

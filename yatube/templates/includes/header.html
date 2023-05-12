@@ -29,7 +29,7 @@
               Технологии
             </a>
           </li>
-          {% if user.is_authenticated %}
+          {% if request.user.is_authenticated %}
             <li class="nav-item">
               <a 
                 class="nav-link {% if view_name  == "posts:post_create" %}active{% endif %}" 

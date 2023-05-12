@@ -5,6 +5,7 @@ from http import HTTPStatus
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse_lazy
@@ -118,11 +119,28 @@ class PostsViewsTests(TestCase):
             cls.post_2010.id: cls.post_2010,
         }
 
-        cls.test_form_data_new_post = {
+        cls.test_form_data_new_comment = {
+            "text": ("Только что созданный комментарий, "
+                     "на котором проверяется редирект "
+                     "и появление на странице поста"),
+        }
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        cache.clear()
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(user=self.user)
+
+        self.test_form_data_new_post = {
             "text": ("Только что созданный пост, "
                      "на котором проверяется редирект "
                      "и попадание на страницы"),
-            "group": cls.group.id,
+            "group": self.group.id,
             "image": SimpleUploadedFile(
                 # pink pixel
                 name="pink.gif",
@@ -136,7 +154,7 @@ class PostsViewsTests(TestCase):
             ),
         }
 
-        cls.test_form_data_edited_post = {
+        self.test_form_data_edited_post = {
             "text": ("Только что отредактированный пост 1960 года, "
                      "на котором проверяется редирект"),
             "image": SimpleUploadedFile(
@@ -152,21 +170,8 @@ class PostsViewsTests(TestCase):
             ),
         }
 
-        cls.test_form_data_new_comment = {
-            "text": ("Только что созданный комментарий, "
-                     "на котором проверяется редирект "
-                     "и появление на странице поста"),
-        }
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def setUp(self):
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(user=self.user)
+    def tearDown(self):
+        cache.clear()
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""

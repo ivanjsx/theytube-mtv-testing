@@ -18,7 +18,6 @@ class CoreTests(TestCase):
             first=guest_response.status_code,
             second=HTTPStatus.NOT_FOUND,
         )
-        print(guest_response.templates)
         self.assertTemplateUsed(
             response=guest_response,
             template_name="core/404.html",

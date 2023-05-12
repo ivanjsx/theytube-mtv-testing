@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse_lazy
 
@@ -278,9 +279,13 @@ class PostsURLsTests(TestCase):
         }
 
     def setUp(self):
+        cache.clear()
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
+
+    def tearDown(self):
+        cache.clear()
 
     def test_responses_for_guest_clients(self):
         """
@@ -351,10 +356,10 @@ class PostsURLsTests(TestCase):
                     target_status_code=HTTPStatus.OK,
                 )
 
-    def test_posts_urls_use_correct_templates(self):
+    def test_posts_urls_use_correct_templates_for_guests(self):
         """
         Проверяются шаблоны, используемые пространством имён posts,
-        при запросах от обоих типов клиентов.
+        при запросах от гостей.
         """
 
         for path, expected in self.path_templates_for_guest_users.items():
@@ -366,6 +371,12 @@ class PostsURLsTests(TestCase):
                     response=guest_response,
                     template_name=expected,
                 )
+
+    def test_posts_urls_use_correct_templates_for_authorized(self):
+        """
+        Проверяются шаблоны, используемые пространством имён posts,
+        при запросах от авторизованных клиентов.
+        """
 
         for path, expected in self.path_templates_for_auth_users.items():
             with self.subTest(path=path):

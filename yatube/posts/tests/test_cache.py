@@ -1,12 +1,11 @@
-import time
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse_lazy
 
-from ..constants import CACHE_TIMEOUT_SECONDS
-from ..models import Group, Post
+from ..models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -14,28 +13,41 @@ User = get_user_model()
 class PostsCacheTests(TestCase):
     """Набор тестов для проверки кэширования страниц пространства имён posts"""
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        cls.user = User.objects.create_user(
+    def setUp(self):
+        self.user = User.objects.create_user(
             username="test_username",
         )
-        cls.group = Group.objects.create(
+        self.passion_of_user = User.objects.create_user(
+            username="passion_of_test_username",
+        )
+        self.follow = Follow.objects.create(
+            user=self.user,
+            author=self.passion_of_user,
+        )
+        self.group = Group.objects.create(
             id=1,
             slug="test_slug",
         )
-        cls.post = Post.objects.create(
-            id=1,
+
+        self.own_post = Post.objects.create(
+            # id=1,    # задаём явно, иначе не сработает .delete()
             text="Тестовый текст тестового поста",
-            author=cls.user,
-            group=cls.group,
+            author=self.user,
+            group=self.group,
+        )
+        self.ones_post = Post.objects.create(
+            # id=2,    # задаём явно, иначе не сработает .delete()
+            text="Тестовый текст тестового поста",
+            author=self.passion_of_user,
         )
 
-    def setUp(self):
+        cache.clear()
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
+
+    def tearDown(self):
+        cache.clear()
 
     def test_index_page_caches(self):
         """Шаблон index использует кэш с обозначенными параметрами."""
@@ -49,10 +61,10 @@ class PostsCacheTests(TestCase):
         )
         self.assertEqual(
             first=len(initial_response.context["page_obj"]),
-            second=1,
+            second=2,
         )
 
-        Post.objects.get(id=1).delete()
+        self.own_post.delete()
 
         response_after_post_deletion = self.guest_client.get(
             path=reverse_lazy(viewname="posts:index"), follow=False,
@@ -69,7 +81,7 @@ class PostsCacheTests(TestCase):
             html2=response_after_post_deletion.content.decode("utf-8"),
         )
 
-        time.sleep(CACHE_TIMEOUT_SECONDS + 1)
+        cache.clear()
 
         response_after_cache_clearance = self.guest_client.get(
             path=reverse_lazy(viewname="posts:index"), follow=False,
@@ -80,146 +92,185 @@ class PostsCacheTests(TestCase):
         )
         self.assertEqual(
             first=len(response_after_cache_clearance.context["page_obj"]),
-            second=0,
-        )
-
-    def test_group_page_caches(self):
-        """Шаблон group_list использует кэш с обозначенными параметрами."""
-
-        initial_response = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:group_list",
-                kwargs={"slug": self.group.slug}
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=initial_response.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertEqual(
-            first=len(initial_response.context["page_obj"]),
             second=1,
         )
 
-        Post.objects.get(id=1).delete()
+    # def test_group_page_caches(self):
+    #     """Шаблон group_list использует кэш с обозначенными параметрами."""
 
-        response_after_post_deletion = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:group_list",
-                kwargs={"slug": self.group.slug}
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_post_deletion.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertIsNone(
-            obj=response_after_post_deletion.context,
-        )
-        self.assertHTMLEqual(
-            html1=initial_response.content.decode("utf-8"),
-            html2=response_after_post_deletion.content.decode("utf-8"),
-        )
+    #     group_slug = self.group.slug
 
-        time.sleep(CACHE_TIMEOUT_SECONDS + 1)
+    #     initial_response = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:group_list",
+    #             kwargs={"slug": group_slug}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=initial_response.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertEqual(
+    #         first=len(initial_response.context["page_obj"]),
+    #         second=1,
+    #     )
 
-        response_after_cache_clearance = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:group_list",
-                kwargs={"slug": self.group.slug}
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_cache_clearance.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertEqual(
-            first=len(response_after_cache_clearance.context["page_obj"]),
-            second=0,
-        )
+    #     self.own_post.delete()
 
-        Group.objects.get(id=1).delete()
+    #     response_after_post_deletion = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:group_list",
+    #             kwargs={"slug": group_slug}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_post_deletion.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertIsNone(
+    #         obj=response_after_post_deletion.context,
+    #     )
+    #     self.assertHTMLEqual(
+    #         html1=initial_response.content.decode("utf-8"),
+    #         html2=response_after_post_deletion.content.decode("utf-8"),
+    #     )
 
-        response_after_group_deletion = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:group_list",
-                kwargs={"slug": self.group.slug}
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_group_deletion.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertIsNone(
-            obj=response_after_group_deletion.context,
-        )
-        self.assertHTMLEqual(
-            html1=response_after_cache_clearance.content.decode("utf-8"),
-            html2=response_after_group_deletion.content.decode("utf-8"),
-        )
+    #     cache.clear()
 
-        time.sleep(CACHE_TIMEOUT_SECONDS + 1)
+    #     response_after_cache_clearance = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:group_list",
+    #             kwargs={"slug": group_slug}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_cache_clearance.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertEqual(
+    #         first=len(response_after_cache_clearance.context["page_obj"]),
+    #         second=0,
+    #     )
 
-        response_after_cache_clearance = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:group_list",
-                kwargs={"slug": self.group.slug}
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_cache_clearance.status_code,
-            second=HTTPStatus.NOT_FOUND,
-        )
+    #     self.group.delete()
 
-    def test_post_detail_page_caches(self):
-        """Шаблон post_detail использует кэш с обозначенными параметрами."""
+    #     response_after_group_deletion = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:group_list",
+    #             kwargs={"slug": group_slug}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_group_deletion.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertIsNone(
+    #         obj=response_after_group_deletion.context,
+    #     )
+    #     self.assertHTMLEqual(
+    #         html1=response_after_cache_clearance.content.decode("utf-8"),
+    #         html2=response_after_group_deletion.content.decode("utf-8"),
+    #     )
 
-        post_id = self.post.id
+    #     cache.clear()
 
-        initial_response = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:post_detail",
-                kwargs={"post_id": post_id},
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=initial_response.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertEqual(
-            first=initial_response.context["post"],
-            second=self.post,
-        )
+    #     response_after_cache_clearance = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:group_list",
+    #             kwargs={"slug": group_slug}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_cache_clearance.status_code,
+    #         second=HTTPStatus.NOT_FOUND,
+    #     )
 
-        Post.objects.get(id=1).delete()
+    # def test_profile_page_caches(self):
+    #     """Шаблон profile использует кэш с обозначенными параметрами."""
 
-        response_after_post_deletion = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:post_detail",
-                kwargs={"post_id": post_id},
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_post_deletion.status_code,
-            second=HTTPStatus.OK,
-        )
-        self.assertIsNone(
-            obj=response_after_post_deletion.context,
-        )
-        self.assertHTMLEqual(
-            html1=initial_response.content.decode("utf-8"),
-            html2=response_after_post_deletion.content.decode("utf-8"),
-        )
+    #     username = self.user.username
 
-        time.sleep(CACHE_TIMEOUT_SECONDS + 1)
+    #     initial_response = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:profile",
+    #             kwargs={"username": username}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=initial_response.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertEqual(
+    #         first=len(initial_response.context["page_obj"]),
+    #         second=1,
+    #     )
 
-        response_after_cache_clearance = self.guest_client.get(
-            path=reverse_lazy(
-                viewname="posts:post_detail",
-                kwargs={"post_id": post_id},
-            ), follow=False,
-        )
-        self.assertEqual(
-            first=response_after_cache_clearance.status_code,
-            second=HTTPStatus.NOT_FOUND,
-        )
+    #     self.own_post.delete()
+
+    #     response_after_post_deletion = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:profile",
+    #             kwargs={"username": username}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_post_deletion.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertIsNone(
+    #         obj=response_after_post_deletion.context,
+    #     )
+    #     self.assertHTMLEqual(
+    #         html1=initial_response.content.decode("utf-8"),
+    #         html2=response_after_post_deletion.content.decode("utf-8"),
+    #     )
+
+    #     cache.clear()
+
+    #     response_after_cache_clearance = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:profile",
+    #             kwargs={"username": username}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_cache_clearance.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertEqual(
+    #         first=len(response_after_cache_clearance.context["page_obj"]),
+    #         second=0,
+    #     )
+
+    #     self.user.delete()
+
+    #     response_after_group_deletion = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:profile",
+    #             kwargs={"username": username}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_group_deletion.status_code,
+    #         second=HTTPStatus.OK,
+    #     )
+    #     self.assertIsNone(
+    #         obj=response_after_group_deletion.context,
+    #     )
+    #     self.assertHTMLEqual(
+    #         html1=response_after_cache_clearance.content.decode("utf-8"),
+    #         html2=response_after_group_deletion.content.decode("utf-8"),
+    #     )
+
+    #     cache.clear()
+
+    #     response_after_cache_clearance = self.guest_client.get(
+    #         path=reverse_lazy(
+    #             viewname="posts:profile",
+    #             kwargs={"username": username}
+    #         ), follow=False,
+    #     )
+    #     self.assertEqual(
+    #         first=response_after_cache_clearance.status_code,
+    #         second=HTTPStatus.NOT_FOUND,
+    #     )

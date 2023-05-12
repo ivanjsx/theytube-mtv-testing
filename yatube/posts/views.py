@@ -25,10 +25,32 @@ def index(request: HttpRequest) -> HttpResponse:
     return render(
         request=request,
         template_name="posts/index.html",
-        context={"page_obj": paginate(request=request, queryset=posts)},
+        context={
+            "page_obj": paginate(request=request, queryset=posts),
+        },
     )
 
 
+@login_required
+def follow_index(request: HttpRequest) -> HttpResponse:
+    """
+    Страница с постами только тех авторов,
+    на которых подписан пользователь.
+    """
+
+    follower = request.user.follower.all().values("author")
+    posts = Post.objects.filter(author__in=follower)
+
+    return render(
+        request=request,
+        template_name="posts/follow.html",
+        context={
+            "page_obj": paginate(request=request, queryset=posts),
+        },
+    )
+
+
+# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="group_page")
 def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     """
     Страница Сообщества (объекта Group).
@@ -48,6 +70,7 @@ def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     )
 
 
+# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="profile_page")
 def profile(request: HttpRequest, username: str) -> HttpResponse:
     """
     Страница Пользователя (объекта User).
@@ -77,7 +100,6 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     )
 
 
-@cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="post_page")
 def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
     """Страница отдельного поста (объекта Post)."""
 
@@ -217,20 +239,3 @@ def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
 
     return redirect(to=reverse_lazy(viewname="posts:profile",
                                     kwargs={"username": username}))
-
-
-@login_required
-def follow_index(request: HttpRequest) -> HttpResponse:
-    """
-    Страница с постами только тех авторов,
-    на которых подписан пользователь.
-    """
-
-    follower = request.user.follower.all().values("author")
-    posts = Post.objects.filter(author__in=follower)
-
-    return render(
-        request=request,
-        template_name="posts/follow.html",
-        context={"page_obj": paginate(request=request, queryset=posts)},
-    )

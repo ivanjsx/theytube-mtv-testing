@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse_lazy
 
@@ -50,7 +51,11 @@ class PaginationTests(TestCase):
         )
 
     def setUp(self):
+        cache.clear()
         self.guest_client = Client()
+
+    def tearDown(self):
+        cache.clear()
 
     def test_ensure_first_page_is_not_the_only_one(self):
         """

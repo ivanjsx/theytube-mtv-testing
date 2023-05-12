@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load thumbnail %}
+{% load user_filters %}
 
 {% block title %}
   Профиль пользователя {{ author.get_full_name }}
@@ -10,7 +11,6 @@
   <div class="container py-5">    
 
     <h1>Все посты пользователя {{ author.get_full_name }}</h1>
-    {% load user_filters %}
     <h3>Всего постов: {{ author.posts|count_items }}</h3>   
 
     {% if user != author %}
@@ -67,9 +67,7 @@
         <hr>
       {% endif %}
     {% endfor %}    
-
     {% include "includes/paginator.html" %}
-
   </div>
 
 {% endblock %}
