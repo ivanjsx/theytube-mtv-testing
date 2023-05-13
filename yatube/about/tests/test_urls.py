@@ -46,7 +46,7 @@ class AboutURLsTests(TestCase):
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
-        self.authorized_client.force_login(user=self.user)        
+        self.authorized_client.force_login(user=self.user)
 
     def test_about_urls_exist_at_desired_locations(self):
         """Проверка доступности адресов пространства имён about"""
