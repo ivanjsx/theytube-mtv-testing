@@ -262,7 +262,7 @@ class PostsURLsTests(TestCase):
         cls.getonly_templates_for_guest_users = {
             # public, GET requests only
             cls.urls["index"]: "posts/index.html",
-            cls.urls["group_slug"]: "posts/group_posts.html",
+            cls.urls["group_slug"]: "posts/group_list.html",
             cls.urls["profile_self"]: "posts/profile.html",
             cls.urls["profile_other"]: "posts/profile.html",
             cls.urls["profile_of_passion"]: "posts/profile.html",
@@ -291,7 +291,7 @@ class PostsURLsTests(TestCase):
         cls.getonly_templates_for_auth_users = {
             # public, GET requests only
             cls.urls["index"]: "posts/index.html",
-            cls.urls["group_slug"]: "posts/group_posts.html",
+            cls.urls["group_slug"]: "posts/group_list.html",
             cls.urls["profile_self"]: "posts/profile.html",
             cls.urls["profile_other"]: "posts/profile.html",
             cls.urls["profile_of_passion"]: "posts/profile.html",
