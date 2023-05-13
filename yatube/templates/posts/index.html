@@ -35,7 +35,7 @@
 
         {% if post.group %}
           <p>
-            <a href="{% url "posts:group_list" slug=post.group.slug %}">
+            <a href="{% url "posts:group_posts" slug=post.group.slug %}">
               Все записи группы
             </a>
           </p>

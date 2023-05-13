@@ -20,7 +20,7 @@
           {% if post.group %}
             <li class="list-group-item">
               <p>В сообществе: {{ post.group.title }}</p>
-              <a href="{% url "posts:group_list" slug=post.group.slug %}">
+              <a href="{% url "posts:group_posts" slug=post.group.slug %}">
                 Все записи группы
               </a>
             </li>
@@ -111,7 +111,7 @@
           </div>
         {% endif %}        
         
-        {% for comment in post.comments.all %}
+        {% for comment in comments %}
           <div class="media mb-4">
             <div class="media-body">
               <h5 class="mt-0">

@@ -18,75 +18,90 @@ class UsersURLsTests(TestCase):
             username="test_username",
         )
 
-        # TODO refine /auth/password_reset/confirm/ path
-        cls.public_paths_status_codes = {
-            "/auth/": HTTPStatus.NOT_FOUND,
-            "/auth/login/": HTTPStatus.OK,
-            "/auth/logout/": HTTPStatus.OK,
-            "/auth/signup/": HTTPStatus.OK,
-            "/auth/password_reset/": HTTPStatus.OK,
-            "/auth/password_reset/done/": HTTPStatus.OK,
-            "/auth/password_reset/confirm/": HTTPStatus.NOT_FOUND,
-            "/auth/password_reset/complete/": HTTPStatus.OK,
-            "/auth/non_existing_path/": HTTPStatus.NOT_FOUND,
+        cls.urls = {
+            # public
+            "auth": "/auth/",
+            "login": "/auth/login/",
+            "signup": "/auth/signup/",
+            "reset": "/auth/reset/",
+            "reset_done": "/auth/reset/done/",
+            "reset_confirm": "/auth/reset/confirm/",
+            "reset_complete": "/auth/reset/complete/",
+            "non_existent": "/auth/non_existent/",
+            # private
+            "change": "/auth/change/",
+            "change_done": "/auth/change/done/",
+            # public, always last in the queue for testing purposes
+            "logout": "/auth/logout/",
         }
 
-        cls.private_paths_redirect_urls = {
-            "/auth/password_change/": (
+        # TODO fix /auth/reset/confirm/ path
+        cls.public_path_status_codes = {
+            cls.urls["auth"]: HTTPStatus.NOT_FOUND,
+            cls.urls["login"]: HTTPStatus.OK,
+            cls.urls["signup"]: HTTPStatus.OK,
+            cls.urls["reset"]: HTTPStatus.OK,
+            cls.urls["reset_done"]: HTTPStatus.OK,
+            cls.urls["reset_confirm"]: HTTPStatus.NOT_FOUND,
+            cls.urls["reset_complete"]: HTTPStatus.OK,
+            cls.urls["non_existent"]: HTTPStatus.NOT_FOUND,
+            cls.urls["logout"]: HTTPStatus.OK,
+        }
+
+        cls.private_path_redirect_guests = {
+            cls.urls["change"]: (
                 f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/auth/password_change/"
+                f"?next={cls.urls['change']}"
             ),
-            "/auth/password_change/done/": (
+            cls.urls["change_done"]: (
                 f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/auth/password_change/done/"
+                f"?next={cls.urls['change_done']}"
             ),
         }
 
-        # TODO add /auth/password_reset/confirm/ path
-        cls.public_paths_templates = {
-            "/auth/login/": "users/login.html",
-            "/auth/signup/": "users/signup.html",
-            "/auth/password_reset/": "users/password_reset.html",
-            "/auth/password_reset/done/": "users/password_reset_done.html",
-            "/auth/password_reset/complete/":
-                "users/password_reset_complete.html",
-            "/auth/logout/": "users/logout.html",
+        # TODO add /auth/reset/confirm/ path
+        cls.path_names = {
+            # public
+            cls.urls["login"]: reverse_lazy(viewname="users:login"),
+            cls.urls["signup"]: reverse_lazy(viewname="users:signup"),
+            cls.urls["reset"]: reverse_lazy(viewname="users:reset"),
+            cls.urls["reset_done"]: reverse_lazy(viewname="users:reset_done"),
+            cls.urls["reset_complete"]: reverse_lazy("users:reset_complete"),
+            # private
+            cls.urls["change"]: reverse_lazy(viewname="users:change"),
+            cls.urls["change_done"]: reverse_lazy("users:change_done"),
+            # public, always last in the queue for testing purposes
+            cls.urls["logout"]: reverse_lazy(viewname="users:logout"),
         }
 
-        cls.private_paths_templates = {
-            "/auth/password_change/": "users/password_change.html",
-            "/auth/password_change/done/": "users/password_change_done.html",
+        # TODO add /auth/reset/confirm/ path
+        cls.path_templates_for_guest_users = {
+            # public
+            cls.urls["login"]: "users/login.html",
+            cls.urls["signup"]: "users/signup.html",
+            cls.urls["reset"]: "users/reset.html",
+            cls.urls["reset_done"]: "users/reset_done.html",
+            cls.urls["reset_complete"]: "users/reset_complete.html",
+            # private
+            cls.urls["change"]: "users/login.html",
+            cls.urls["change_done"]: "users/login.html",
+            # public, always last in the queue for testing purposes
+            cls.urls["logout"]: "users/logout.html",
         }
 
-        # TODO add /auth/password_reset/confirm/ path
-        cls.public_names_templates = {
-            reverse_lazy(
-                viewname="users:login",
-            ): "users/login.html",
-            reverse_lazy(
-                viewname="users:signup",
-            ): "users/signup.html",
-            reverse_lazy(
-                viewname="users:password_reset",
-            ): "users/password_reset.html",
-            reverse_lazy(
-                viewname="users:password_reset_done",
-            ): "users/password_reset_done.html",
-            reverse_lazy(
-                viewname="users:password_reset_complete",
-            ): "users/password_reset_complete.html",
-            reverse_lazy(
-                viewname="users:logout",
-            ): "users/logout.html",
-        }
-
-        cls.private_names_templates = {
-            reverse_lazy(
-                viewname="users:password_change",
-            ): "users/password_change.html",
-            reverse_lazy(
-                viewname="users:password_change_done",
-            ): "users/password_change_done.html",
+        # TODO add /auth/reset/confirm/ path
+        cls.path_templates_for_auth_users = {
+            # public
+            cls.urls["login"]: "users/login.html",
+            cls.urls["signup"]: "users/signup.html",
+            cls.urls["reset"]: "users/reset.html",
+            cls.urls["reset_done"]: "users/reset_done.html",
+            cls.urls["reset_complete"]: "users/reset_complete.html",
+            # private
+            cls.urls["change"]: "users/change.html",
+            cls.urls["change_done"]: "users/change_done.html",
+            # public, always last in the queue for testing purposes
+            cls.urls["logout"]: "users/logout.html",
         }
 
     def setUp(self):
@@ -94,37 +109,23 @@ class UsersURLsTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
 
-    def test_users_public_urls_exist_at_desired_locations(self):
+    def test_responses_for_guest_clients(self):
         """
-        Проверка общедоступных адресов пространства имён users.
-        Проверяется реакция при запросе от обоих типов клиентов.
+        Проверяется реакция адресов пространства имён users
+        на запросы от гостевых клиентов.
         """
 
-        for path, expected in self.public_paths_status_codes.items():
+        for path, expected in self.public_path_status_codes.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
-                    path=path, follow=False,
-                )
-                authorized_response = self.authorized_client.get(
                     path=path, follow=False,
                 )
                 self.assertEqual(
                     first=guest_response.status_code,
                     second=expected,
                 )
-                self.assertEqual(
-                    first=authorized_response.status_code,
-                    second=expected,
-                )
 
-    def test_users_private_urls_response_for_guest_users(self):
-        """
-        Проверка адресов пространства имён users,
-        доступных только авторизованным пользователям.
-        Проверяется реакция при запросе от гостевого клиента.
-        """
-
-        for path, expected in self.private_paths_redirect_urls.items():
+        for path, expected in self.private_path_redirect_guests.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
                     path=path, follow=False,
@@ -136,14 +137,13 @@ class UsersURLsTests(TestCase):
                     target_status_code=HTTPStatus.OK,
                 )
 
-    def test_users_private_urls_response_for_authorized_users(self):
+    def test_responses_for_authorized_clients(self):
         """
-        Проверка адресов пространства имён users,
-        Доступных только авторизованным пользователям.
-        Проверяется реакция при запросе от авторизованного клиента.
+        Проверяется реакция адресов пространства имён users
+        на запросы от авторизованных клиентов.
         """
 
-        for path in self.private_paths_redirect_urls.keys():
+        for path in self.private_path_redirect_guests.keys():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=False,
@@ -153,104 +153,43 @@ class UsersURLsTests(TestCase):
                     second=HTTPStatus.OK,
                 )
 
-    def test_users_urls_use_correct_templates_for_guest_users(self):
-        """
-        Проверка шаблонов для URL адресов пространства имён users.
-        Проверяется реакция при запросе от гостевого клиента.
-        """
+        for path, expected in self.public_path_status_codes.items():
+            with self.subTest(path=path):
+                authorized_response = self.authorized_client.get(
+                    path=path, follow=False,
+                )
+                self.assertEqual(
+                    first=authorized_response.status_code,
+                    second=expected,
+                )
 
-        for path in self.private_paths_templates.keys():
+    def test_users_urls_use_correct_names(self):
+        """Проверка имён адресов пространства имён users"""
+
+        for path, expected in self.path_names.items():
+            with self.subTest(path=path):
+                self.assertEqual(
+                    first=path,
+                    second=expected,
+                )
+
+    def test_users_urls_use_correct_templates(self):
+        """Проверка шаблонов адресов пространства имён users"""
+
+        for path, expected in self.path_templates_for_guest_users.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
                     path=path, follow=True,
                 )
                 self.assertTemplateUsed(
                     response=guest_response,
-                    template_name="users/login.html",
-                )
-
-        for path, expected in self.public_paths_templates.items():
-            with self.subTest(path=path):
-                guest_response = self.guest_client.get(
-                    path=path, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=guest_response,
                     template_name=expected,
                 )
 
-    def test_users_urls_use_correct_templates_for_authorized_users(self):
-        """
-        Проверка шаблонов для URL адресов пространства имён users.
-        Проверяется реакция при запросе от авторизованного клиента.
-        """
-
-        for path, expected in self.private_paths_templates.items():
+        for path, expected in self.path_templates_for_auth_users.items():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=authorized_response,
-                    template_name=expected,
-                )
-
-        for path, expected in self.public_paths_templates.items():
-            with self.subTest(path=path):
-                authorized_response = self.authorized_client.get(
-                    path=path, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=authorized_response,
-                    template_name=expected,
-                )
-
-    def test_users_names_use_correct_templates_for_guest_users(self):
-        """
-        Проверка шаблонов для имён адресов пространства имён users.
-        Проверяется реакция при запросе от гостевого клиента.
-        """
-
-        for name in self.private_names_templates.keys():
-            with self.subTest(name=name):
-                guest_response = self.guest_client.get(
-                    path=name, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=guest_response,
-                    template_name="users/login.html",
-                )
-
-        for name, expected in self.public_names_templates.items():
-            with self.subTest(name=name):
-                guest_response = self.guest_client.get(
-                    path=name, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=guest_response,
-                    template_name=expected,
-                )
-
-    def test_users_names_use_correct_templates_for_authorized_users(self):
-        """
-        Проверка шаблонов для имён адресов пространства имён users.
-        Проверяется реакция при запросе от авторизованного клиента.
-        """
-
-        for name, expected in self.private_names_templates.items():
-            with self.subTest(name=name):
-                authorized_response = self.authorized_client.get(
-                    path=name, follow=True,
-                )
-                self.assertTemplateUsed(
-                    response=authorized_response,
-                    template_name=expected,
-                )
-
-        for name, expected in self.public_names_templates.items():
-            with self.subTest(name=name):
-                authorized_response = self.authorized_client.get(
-                    path=name, follow=True,
                 )
                 self.assertTemplateUsed(
                     response=authorized_response,

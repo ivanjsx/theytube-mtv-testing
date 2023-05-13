@@ -24,52 +24,52 @@ urlpatterns = [
     ),
 
     path(
-        route="password_change/",
+        route="change/",
         view=views.PasswordChangeView.as_view(
-            template_name="users/password_change.html",
-            success_url=reverse_lazy(viewname="users:password_change_done")
+            template_name="users/change.html",
+            success_url=reverse_lazy(viewname="users:change_done")
         ),
-        name="password_change",
+        name="change",
     ),
     path(
-        route="password_change/done/",
+        route="change/done/",
         view=views.PasswordChangeDoneView.as_view(
-            template_name="users/password_change_done.html"
+            template_name="users/change_done.html"
         ),
-        name="password_change_done",
+        name="change_done",
     ),
 
     path(
-        route="password_reset/",
+        route="reset/",
         view=views.PasswordResetView.as_view(
-            template_name="users/password_reset.html",
-            email_template_name="users/password_reset_email.html",
-            success_url=reverse_lazy(viewname="users:password_reset_done")
+            template_name="users/reset.html",
+            email_template_name="users/reset_email.html",
+            success_url=reverse_lazy(viewname="users:reset_done")
         ),
-        name="password_reset",
+        name="reset",
     ),
     path(
-        route="password_reset/done/",
+        route="reset/done/",
         view=views.PasswordResetDoneView.as_view(
-            template_name="users/password_reset_done.html"
+            template_name="users/reset_done.html"
         ),
-        name="password_reset_done",
+        name="reset_done",
     ),
 
-    # TODO fix /auth/password_reset/confirm/ path
+    # TODO fix /auth/reset/confirm/ path
     path(
-        route="password_reset/confirm/<uidb64>/<token>/",
+        route="reset/confirm/<uidb64>/<token>/",
         view=views.PasswordResetConfirmView.as_view(
-            template_name="users/password_reset_confirm.html",
-            success_url=reverse_lazy(viewname="users:password_reset_complete")
+            template_name="users/reset_confirm.html",
+            success_url=reverse_lazy(viewname="users:reset_complete")
         ),
-        name="password_reset_confirm",
+        name="reset_confirm",
     ),
     path(
-        route="password_reset/complete/",
+        route="reset/complete/",
         view=views.PasswordResetCompleteView.as_view(
-            template_name="users/password_reset_complete.html"
+            template_name="users/reset_complete.html"
         ),
-        name="password_reset_complete",
+        name="reset_complete",
     ),
 ]

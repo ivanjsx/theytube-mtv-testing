@@ -119,12 +119,6 @@ class PostsViewsTests(TestCase):
             cls.post_2010.id: cls.post_2010,
         }
 
-        cls.test_form_data_new_comment = {
-            "text": ("Только что созданный комментарий, "
-                     "на котором проверяется редирект "
-                     "и появление на странице поста"),
-        }
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -135,40 +129,6 @@ class PostsViewsTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
-
-        self.test_form_data_new_post = {
-            "text": ("Только что созданный пост, "
-                     "на котором проверяется редирект "
-                     "и попадание на страницы"),
-            "group": self.group.id,
-            "image": SimpleUploadedFile(
-                # pink pixel
-                name="pink.gif",
-                content_type="image/gif",
-                content=(
-                    b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80"
-                    b"\x00\x00\xFF\xC0\xCB\xFF\xFF\xFF\x21\xF9\x04"
-                    b"\x00\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01"
-                    b"\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
-                ),
-            ),
-        }
-
-        self.test_form_data_edited_post = {
-            "text": ("Только что отредактированный пост 1960 года, "
-                     "на котором проверяется редирект"),
-            "image": SimpleUploadedFile(
-                # purple pixel
-                name="purple.gif",
-                content_type="image/gif",
-                content=(
-                    b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80"
-                    b"\x00\x00\x80\x00\x80\xFF\xFF\xFF\x21\xF9\x04"
-                    b"\x00\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01"
-                    b"\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
-                ),
-            ),
-        }
 
     def tearDown(self):
         cache.clear()
@@ -211,12 +171,12 @@ class PostsViewsTests(TestCase):
                     second=expected,
                 )
 
-    def test_group_list_page_show_correct_context(self):
-        """Шаблон group_list сформирован с правильным контекстом."""
+    def test_group_posts_page_show_correct_context(self):
+        """Шаблон group_posts сформирован с правильным контекстом."""
 
         guest_response = self.guest_client.get(
             path=reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.group.slug},
             ),
             follow=False,
@@ -240,7 +200,7 @@ class PostsViewsTests(TestCase):
 
         guest_response = self.guest_client.get(
             path=reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.other_group.slug},
             ),
             follow=False,
@@ -412,6 +372,187 @@ class PostsViewsTests(TestCase):
             cls=PostForm,
         )
 
+    def test_cannot_follow_myself(self):
+        """Нельзя подписаться на себя, но ничего при этом не ломается."""
+
+        initial_follows_count = Follow.objects.count()
+
+        authorized_response = self.authorized_client.post(
+            path=reverse_lazy(
+                viewname="posts:profile_follow",
+                kwargs={"username": self.user.username},
+            ),
+            follow=True,
+        )
+        self.assertEqual(
+            first=Follow.objects.count(),
+            second=initial_follows_count,
+        )
+        self.assertEqual(
+            first=authorized_response.status_code,
+            second=HTTPStatus.OK,
+        )
+
+    def test_cannot_follow_already_following(self):
+        """
+        Нельзя подписаться на того, на кого уже подписан,
+        но ничего при этом не ломается.
+        """
+
+        initial_follows_count = Follow.objects.count()
+
+        authorized_response = self.authorized_client.post(
+            path=reverse_lazy(
+                viewname="posts:profile_follow",
+                kwargs={"username": self.passion_of_user.username},
+            ),
+            follow=True,
+        )
+        self.assertEqual(
+            first=Follow.objects.count(),
+            second=initial_follows_count,
+        )
+        self.assertEqual(
+            first=authorized_response.status_code,
+            second=HTTPStatus.OK,
+        )
+
+    def test_cannot_unfollow_who_you_dont_follow(self):
+        """
+        Нельзя отписаться от того, на кого и не был подписан,
+        но ничего при этом не ломается.
+        """
+
+        initial_follows_count = Follow.objects.count()
+
+        authorized_response = self.authorized_client.post(
+            path=reverse_lazy(
+                viewname="posts:profile_unfollow",
+                kwargs={"username": self.other_user.username},
+            ),
+            follow=True,
+        )
+        self.assertEqual(
+            first=Follow.objects.count(),
+            second=initial_follows_count,
+        )
+        self.assertEqual(
+            first=authorized_response.status_code,
+            second=HTTPStatus.OK,
+        )
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class PostsModelsCreationTests(TestCase):
+    """
+    Набор тестов для проверки работы вью-функций пространства имён posts
+    в части создания и редактирования объектов моделей приложения posts.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.group = Group.objects.create(
+            slug="test_slug",
+        )
+        cls.other_group = Group.objects.create(
+            slug="other_test_slug",
+        )
+        cls.user = User.objects.create_user(
+            username="test_username",
+        )
+        cls.other_user = User.objects.create_user(
+            username="other_test_username",
+        )
+        cls.passion_of_user = User.objects.create_user(
+            username="passion_of_test_username",
+        )
+
+        cls.follow = Follow.objects.create(
+            user=cls.user,
+            author=cls.passion_of_user,
+        )
+
+        cls.post_1960 = Post.objects.create(
+            created=datetime.date(1960, 1, 1),
+            text="Тестовый пост 1960 года",
+            author=cls.user,
+            group=cls.group,
+        )
+        cls.post_1970 = Post.objects.create(
+            created=datetime.date(1970, 1, 1),
+            text="Тестовый пост 1970 года",
+            author=cls.other_user,
+            group=cls.group,
+        )
+        cls.post_1980 = Post.objects.create(
+            created=datetime.date(1980, 1, 1),
+            text="Тестовый пост 1980 года",
+            author=cls.user,
+            group=cls.other_group,
+        )
+        cls.post_1990 = Post.objects.create(
+            created=datetime.date(1990, 1, 1),
+            text="Тестовый пост 1990 года",
+            author=cls.other_user,
+            group=cls.other_group,
+        )
+
+        cls.test_form_data_new_comment = {
+            "text": ("Только что созданный комментарий, "
+                     "на котором проверяется редирект "
+                     "и появление на странице поста"),
+        }
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        cache.clear()
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(user=self.user)
+
+        self.test_form_data_new_post = {
+            "text": ("Только что созданный пост, "
+                     "на котором проверяется редирект "
+                     "и попадание на страницы"),
+            "group": self.group.id,
+            "image": SimpleUploadedFile(
+                # pink pixel
+                name="pink.gif",
+                content_type="image/gif",
+                content=(
+                    b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80"
+                    b"\x00\x00\xFF\xC0\xCB\xFF\xFF\xFF\x21\xF9\x04"
+                    b"\x00\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01"
+                    b"\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
+                ),
+            ),
+        }
+
+        self.test_form_data_edited_post = {
+            "text": ("Только что отредактированный пост 1960 года, "
+                     "на котором проверяется редирект"),
+            "image": SimpleUploadedFile(
+                # purple pixel
+                name="purple.gif",
+                content_type="image/gif",
+                content=(
+                    b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80"
+                    b"\x00\x00\x80\x00\x80\xFF\xFF\xFF\x21\xF9\x04"
+                    b"\x00\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01"
+                    b"\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
+                ),
+            ),
+        }
+
+    def tearDown(self):
+        cache.clear()
+
     def test_redirect_after_post_creation(self):
         """После создания поста происходит редирект на страницу автора."""
 
@@ -473,7 +614,7 @@ class PostsViewsTests(TestCase):
 
         guest_response = self.guest_client.get(
             path=reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.group.slug},
             ),
             follow=False,
@@ -517,7 +658,7 @@ class PostsViewsTests(TestCase):
 
         guest_response = self.guest_client.get(
             path=reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.other_group.slug},
             ),
             follow=False,
@@ -604,7 +745,7 @@ class PostsViewsTests(TestCase):
 
         initial_follows_count = Follow.objects.count()
 
-        authorized_response = self.authorized_client.get(
+        authorized_response = self.authorized_client.post(
             path=reverse_lazy(
                 viewname="posts:profile_follow",
                 kwargs={"username": self.other_user.username},
@@ -625,7 +766,7 @@ class PostsViewsTests(TestCase):
 
         initial_follows_count = Follow.objects.count()
 
-        authorized_response = self.authorized_client.get(
+        authorized_response = self.authorized_client.post(
             path=reverse_lazy(
                 viewname="posts:profile_unfollow",
                 kwargs={"username": self.passion_of_user.username},
@@ -635,75 +776,6 @@ class PostsViewsTests(TestCase):
         self.assertEqual(
             first=Follow.objects.count(),
             second=initial_follows_count - 1,
-        )
-        self.assertEqual(
-            first=authorized_response.status_code,
-            second=HTTPStatus.OK,
-        )
-
-    def test_cannot_follow_myself(self):
-        """Нельзя подписаться на себя, но ничего при этом не ломается."""
-
-        initial_follows_count = Follow.objects.count()
-
-        authorized_response = self.authorized_client.get(
-            path=reverse_lazy(
-                viewname="posts:profile_follow",
-                kwargs={"username": self.user.username},
-            ),
-            follow=True,
-        )
-        self.assertEqual(
-            first=Follow.objects.count(),
-            second=initial_follows_count,
-        )
-        self.assertEqual(
-            first=authorized_response.status_code,
-            second=HTTPStatus.OK,
-        )
-
-    def test_cannot_follow_already_following(self):
-        """
-        Нельзя подписаться на того, на кого уже подписан,
-        но ничего при этом не ломается.
-        """
-
-        initial_follows_count = Follow.objects.count()
-
-        authorized_response = self.authorized_client.get(
-            path=reverse_lazy(
-                viewname="posts:profile_follow",
-                kwargs={"username": self.passion_of_user.username},
-            ),
-            follow=True,
-        )
-        self.assertEqual(
-            first=Follow.objects.count(),
-            second=initial_follows_count,
-        )
-        self.assertEqual(
-            first=authorized_response.status_code,
-            second=HTTPStatus.OK,
-        )
-
-    def test_cannot_unfollow_who_you_dont_follow(self):
-        """
-        Нельзя отписаться от того, на кого и не был подписан,
-        но ничего при этом не ломается.
-        """
-
-        initial_follows_count = Follow.objects.count()
-
-        authorized_response = self.authorized_client.get(
-            path=reverse_lazy(
-                viewname="posts:profile_unfollow",
-                kwargs={"username": self.other_user.username},
-            ),
-            follow=True,
-        )
-        self.assertEqual(
-            first=Follow.objects.count(),
-            second=initial_follows_count,
         )
         self.assertEqual(
             first=authorized_response.status_code,

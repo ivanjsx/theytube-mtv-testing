@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.urls import reverse_lazy
 
 from core.models import CreatedModel
 
@@ -38,7 +39,10 @@ class Group(models.Model):
         return self.title
 
     def get_absolute_url(self):
-        return f"/group/{self.slug}/"
+        return reverse_lazy(
+            viewname="posts:group_posts",
+            kwargs={"slug": self.slug},
+        )
 
 
 class Post(CreatedModel):
@@ -88,7 +92,10 @@ class Post(CreatedModel):
         return self.text[:POST_PREVIEW_SYMBOLS]
 
     def get_absolute_url(self):
-        return f"/posts/{self.id}/"
+        return reverse_lazy(
+            viewname="posts:post_detail",
+            kwargs={"post_id": self.id},
+        )
 
 
 class Comment(CreatedModel):

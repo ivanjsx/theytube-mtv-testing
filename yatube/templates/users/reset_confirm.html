@@ -10,7 +10,7 @@
 
 {% comment %} TODO fix form_action_url {% endcomment %}
 {% block form_action_url %}
-  {% url "users:password_reset_confirm" uidb64=uid token=token %}
+  {% url "users:reset_confirm" uidb64=uid token=token %}
 {% endblock %}"
 
 {% block submit_area %}

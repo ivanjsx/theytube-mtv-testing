@@ -9,9 +9,9 @@ class CoreTests(TestCase):
     def setUp(self):
         self.guest_client = Client()
 
-    def test_error_page(self):
+    def test_404_error_page(self):
         guest_response = self.guest_client.get(
-            path="/nonexist-page/",
+            path="/non_existent/",
             follow=False,
         )
         self.assertEqual(

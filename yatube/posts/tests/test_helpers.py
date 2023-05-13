@@ -176,11 +176,11 @@ class PaginationTests(TestCase):
             ),
 
             reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.group.slug},
             ) + "?page=1": POSTS_PER_PAGE,
             reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.group.slug},
             ) + "?page=2": (
                 self.group.posts.count()
@@ -200,15 +200,15 @@ class PaginationTests(TestCase):
             ),
 
             reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.other_group.slug},
             ) + "?page=1": POSTS_PER_PAGE,
             reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.other_group.slug},
             ) + "?page=2": POSTS_PER_PAGE,
             reverse_lazy(
-                viewname="posts:group_list",
+                viewname="posts:group_posts",
                 kwargs={"slug": self.other_group.slug},
             ) + "?page=3": (
                 self.other_group.posts.count()

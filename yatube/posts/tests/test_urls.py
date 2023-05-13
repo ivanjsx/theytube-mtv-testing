@@ -43,239 +43,278 @@ class PostsURLsTests(TestCase):
             slug="test_slug",
         )
 
-        # !!!! все адреса, отдающие одинаковые конечные статусы ответа
-        # !!!! вне зависимости от статуса авторизации пользователя.
-        # поведение словаря ниже описывает ответы для всех типов клиентов.
-        cls.public_paths_status_codes = {
-            "/": HTTPStatus.OK,
-            "/group/": HTTPStatus.NOT_FOUND,
-            f"/group/{cls.group.slug}/": HTTPStatus.OK,
-            "/group/non_existing_slug/": HTTPStatus.NOT_FOUND,
-            "/profile/": HTTPStatus.NOT_FOUND,
-            f"/profile/{cls.user.username}/": HTTPStatus.OK,
-            f"/profile/{cls.other_user.username}/": HTTPStatus.OK,
-            "/profile/non_existing_username/": HTTPStatus.NOT_FOUND,
-            "/posts/": HTTPStatus.NOT_FOUND,
-            f"/posts/{cls.own_post.id}/": HTTPStatus.OK,
-            f"/posts/{cls.ones_post.id}/": HTTPStatus.OK,
-            "/posts/69420/": HTTPStatus.NOT_FOUND,
-        }
-
-        # !!!! все адреса, которые редиректят гостя на страницу логина,
-        # !!!! а авторизованному пользователю отдают 200.
-        # поведение словаря ниже описывает ответ для гостей.
-        cls.private_paths_redirect_guests = {
-            "/follow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/follow/"
+        cls.urls = {
+            # public, GET requests only
+            "index": "/",
+            "group": "/group/",
+            "group_slug": f"/group/{cls.group.slug}/",
+            "group_non_existent": "/group/non_existent/",
+            "profile": "/profile/",
+            "profile_self": f"/profile/{cls.user.username}/",
+            "profile_other": f"/profile/{cls.other_user.username}/",
+            "profile_of_passion": f"/profile/{cls.passion_of_user.username}/",
+            "profile_non_existent": "/profile/non_existent/",
+            "posts": "/posts/",
+            "post_own": f"/posts/{cls.own_post.id}/",
+            "post_ones": f"/posts/{cls.ones_post.id}/",
+            "post_non_existent": "/posts/69420/",
+            # private, GET requests only
+            "follow": "/follow/",
+            "create": "/create/",
+            "edit_own": f"/posts/{cls.own_post.id}/edit/",
+            # restricted, GET requests only
+            "edit_ones": f"/posts/{cls.ones_post.id}/edit/",
+            # restricted, POST requests only
+            "comment_on_own": f"/posts/{cls.own_post.id}/comment/",
+            "comment_on_ones": f"/posts/{cls.ones_post.id}/comment/",
+            "follow_self": f"/profile/{cls.user.username}/follow/",
+            "unfollow_self": f"/profile/{cls.user.username}/unfollow/",
+            "follow_other": f"/profile/{cls.other_user.username}/follow/",
+            "unfollow_other": f"/profile/{cls.other_user.username}/unfollow/",
+            "follow_passion": (
+                f"/profile/{cls.passion_of_user.username}/follow/"
             ),
-            "/create/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/create/"
-            ),
-            f"/posts/{cls.own_post.id}/edit/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/posts/{cls.own_post.id}/edit/"
-            ),
-        }
-
-        # !!!! все адреса, которые редиректят гостя на страницу логина,
-        # !!!! а авторизованного пользователя - на другую страницу.
-        # поведение словаря ниже описывает ответ для гостей.
-        cls.restricted_paths_redirect_guests = {
-            f"/posts/{cls.ones_post.id}/edit/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/posts/{cls.ones_post.id}/edit/"
-            ),
-            f"/posts/{cls.own_post.id}/comment/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/posts/{cls.own_post.id}/comment/"
-            ),
-            f"/posts/{cls.ones_post.id}/comment/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/posts/{cls.ones_post.id}/comment/"
-            ),
-            f"/profile/{cls.user.username}/follow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.user.username}/follow/"
-            ),
-            f"/profile/{cls.user.username}/unfollow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.user.username}/unfollow/"
-            ),
-            f"/profile/{cls.other_user.username}/follow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.other_user.username}/follow/"
-            ),
-            f"/profile/{cls.other_user.username}/unfollow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.other_user.username}/unfollow/"
-            ),
-            f"/profile/{cls.passion_of_user.username}/follow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.passion_of_user.username}/follow/"
-            ),
-            f"/profile/{cls.passion_of_user.username}/unfollow/": (
-                f"{reverse_lazy(viewname='users:login')}"
-                f"?next=/profile/{cls.passion_of_user.username}/unfollow/"
+            "unfollow_passion": (
+                f"/profile/{cls.passion_of_user.username}/unfollow/"
             ),
         }
 
-        # !!!! все адреса, которые редиректят гостя на страницу логина,
-        # !!!! а авторизованного пользователя - на другую страницу.
-        # поведение словаря ниже описывает ответ для авторизованных клиентов.
-        cls.restricted_paths_redirect_auth = {
-            f"/posts/{cls.ones_post.id}/edit/": (
-                f"/posts/{cls.ones_post.id}/"
+        cls.public_path_status_codes = {
+            cls.urls["index"]: HTTPStatus.OK,
+            cls.urls["group"]: HTTPStatus.NOT_FOUND,
+            cls.urls["group_slug"]: HTTPStatus.OK,
+            cls.urls["group_non_existent"]: HTTPStatus.NOT_FOUND,
+            cls.urls["profile"]: HTTPStatus.NOT_FOUND,
+            cls.urls["profile_self"]: HTTPStatus.OK,
+            cls.urls["profile_other"]: HTTPStatus.OK,
+            cls.urls["profile_of_passion"]: HTTPStatus.OK,
+            cls.urls["profile_non_existent"]: HTTPStatus.NOT_FOUND,
+            cls.urls["posts"]: HTTPStatus.NOT_FOUND,
+            cls.urls["post_own"]: HTTPStatus.OK,
+            cls.urls["post_ones"]: HTTPStatus.OK,
+            cls.urls["post_non_existent"]: HTTPStatus.NOT_FOUND,
+        }
+
+        cls.private_path_redirect_guests = {
+            cls.urls["follow"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['follow']}"
             ),
-            f"/posts/{cls.own_post.id}/comment/": (
-                f"/posts/{cls.own_post.id}/"
+            cls.urls["create"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['create']}"
             ),
-            f"/posts/{cls.ones_post.id}/comment/": (
-                f"/posts/{cls.ones_post.id}/"
-            ),
-            f"/profile/{cls.user.username}/follow/": (
-                f"/profile/{cls.user.username}/"
-            ),
-            f"/profile/{cls.user.username}/unfollow/": (
-                f"/profile/{cls.user.username}/"
-            ),
-            f"/profile/{cls.other_user.username}/follow/": (
-                f"/profile/{cls.other_user.username}/"
-            ),
-            f"/profile/{cls.other_user.username}/unfollow/": (
-                f"/profile/{cls.other_user.username}/"
-            ),
-            f"/profile/{cls.passion_of_user.username}/follow/": (
-                f"/profile/{cls.passion_of_user.username}/"
-            ),
-            f"/profile/{cls.passion_of_user.username}/unfollow/": (
-                f"/profile/{cls.passion_of_user.username}/"
+            cls.urls["edit_own"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['edit_own']}"
             ),
         }
 
-        cls.path_templates_for_guest_users = {
-            "/": "posts/index.html",
-            f"/group/{cls.group.slug}/": "posts/group_list.html",
-            f"/profile/{cls.user.username}/": "posts/profile.html",
-            f"/profile/{cls.other_user.username}/": "posts/profile.html",
-            f"/posts/{cls.own_post.id}/": "posts/post_detail.html",
-            f"/posts/{cls.ones_post.id}/": "posts/post_detail.html",
-            "/follow/": "users/login.html",
-            "/create/": "users/login.html",
-            f"/posts/{cls.own_post.id}/edit/": "users/login.html",
-            f"/posts/{cls.ones_post.id}/edit/": "users/login.html",
-            f"/posts/{cls.own_post.id}/comment/": "users/login.html",
-            f"/posts/{cls.ones_post.id}/comment/": "users/login.html",
-            f"/profile/{cls.user.username}/follow/": "users/login.html",
-            f"/profile/{cls.user.username}/unfollow/": "users/login.html",
-            f"/profile/{cls.other_user.username}/follow/": (
-                "users/login.html"
-            ),
-            f"/profile/{cls.other_user.username}/unfollow/": (
-                "users/login.html"
-            ),
-            f"/profile/{cls.passion_of_user.username}/follow/": (
-                "users/login.html"
-            ),
-            f"/profile/{cls.passion_of_user.username}/unfollow/": (
-                "users/login.html"
+        cls.restricted_getonly_redirect_guests = {
+            cls.urls["edit_ones"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['edit_ones']}"
             ),
         }
 
-        cls.path_templates_for_auth_users = {
-            "/": "posts/index.html",
-            f"/group/{cls.group.slug}/": "posts/group_list.html",
-            f"/profile/{cls.user.username}/": "posts/profile.html",
-            f"/profile/{cls.other_user.username}/": "posts/profile.html",
-            f"/posts/{cls.own_post.id}/": "posts/post_detail.html",
-            f"/posts/{cls.ones_post.id}/": "posts/post_detail.html",
-            "/follow/": "posts/follow.html",
-            "/create/": "posts/post_create.html",
-            f"/posts/{cls.own_post.id}/edit/": "posts/post_create.html",
-            f"/posts/{cls.ones_post.id}/edit/": "posts/post_detail.html",
-            f"/posts/{cls.own_post.id}/comment/": "posts/post_detail.html",
-            f"/posts/{cls.ones_post.id}/comment/": "posts/post_detail.html",
-            f"/profile/{cls.user.username}/follow/": "posts/profile.html",
-            f"/profile/{cls.user.username}/unfollow/": "posts/profile.html",
-            f"/profile/{cls.other_user.username}/follow/": (
-                "posts/profile.html"
+        cls.restricted_getonly_redirect_auth = {
+            cls.urls["edit_ones"]: (
+                f"{cls.urls['post_ones']}"
             ),
-            f"/profile/{cls.other_user.username}/unfollow/": (
-                "posts/profile.html"
+        }
+
+        cls.restricted_postonly_redirect_guests = {
+            cls.urls["comment_on_own"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['comment_on_own']}"
             ),
-            f"/profile/{cls.passion_of_user.username}/follow/": (
-                "posts/profile.html"
+            cls.urls["comment_on_ones"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['comment_on_ones']}"
             ),
-            f"/profile/{cls.passion_of_user.username}/unfollow/": (
-                "posts/profile.html"
+            cls.urls["follow_self"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['follow_self']}"
+            ),
+            cls.urls["unfollow_self"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['unfollow_self']}"
+            ),
+            cls.urls["follow_other"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['follow_other']}"
+            ),
+            cls.urls["unfollow_other"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['unfollow_other']}"
+            ),
+            cls.urls["follow_passion"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['follow_passion']}"
+            ),
+            cls.urls["unfollow_passion"]: (
+                f"{reverse_lazy(viewname='users:login')}"
+                f"?next={cls.urls['unfollow_passion']}"
+            ),
+        }
+
+        cls.restricted_postonly_redirect_auth = {
+            cls.urls["comment_on_own"]: (
+                f"{cls.urls['post_own']}"
+            ),
+            cls.urls["comment_on_ones"]: (
+                f"{cls.urls['post_ones']}"
+            ),
+            cls.urls["follow_self"]: (
+                f"{cls.urls['profile_self']}"
+            ),
+            cls.urls["unfollow_self"]: (
+                f"{cls.urls['profile_self']}"
+            ),
+            cls.urls["follow_other"]: (
+                f"{cls.urls['profile_other']}"
+            ),
+            cls.urls["unfollow_other"]: (
+                f"{cls.urls['profile_other']}"
+            ),
+            cls.urls["follow_passion"]: (
+                f"{cls.urls['profile_of_passion']}"
+            ),
+            cls.urls["unfollow_passion"]: (
+                f"{cls.urls['profile_of_passion']}"
             ),
         }
 
         cls.path_names = {
-            "/": reverse_lazy(viewname="posts:index"),
-            f"/group/{cls.group.slug}/": reverse_lazy(
-                viewname="posts:group_list",
+            # public, GET requests only
+            cls.urls["index"]: reverse_lazy(viewname="posts:index"),
+            cls.urls["group_slug"]: reverse_lazy(
+                viewname="posts:group_posts",
                 kwargs={"slug": cls.group.slug},
             ),
-            f"/profile/{cls.user.username}/": reverse_lazy(
+            cls.urls["profile_self"]: reverse_lazy(
                 viewname="posts:profile",
                 kwargs={"username": cls.user.username},
             ),
-            f"/profile/{cls.other_user.username}/": reverse_lazy(
+            cls.urls["profile_other"]: reverse_lazy(
                 viewname="posts:profile",
                 kwargs={"username": cls.other_user.username},
             ),
-            f"/posts/{cls.own_post.id}/": reverse_lazy(
+            cls.urls["profile_of_passion"]: reverse_lazy(
+                viewname="posts:profile",
+                kwargs={"username": cls.passion_of_user.username},
+            ),
+            cls.urls["post_own"]: reverse_lazy(
                 viewname="posts:post_detail",
                 kwargs={"post_id": cls.own_post.id},
             ),
-            f"/posts/{cls.ones_post.id}/": reverse_lazy(
+            cls.urls["post_ones"]: reverse_lazy(
                 viewname="posts:post_detail",
                 kwargs={"post_id": cls.ones_post.id},
             ),
-            "/follow/": reverse_lazy(viewname="posts:follow_index"),
-            "/create/": reverse_lazy(viewname="posts:post_create"),
-            f"/posts/{cls.own_post.id}/edit/": reverse_lazy(
+            # private, GET requests only
+            cls.urls["follow"]: reverse_lazy(viewname="posts:follow_index"),
+            cls.urls["create"]: reverse_lazy(viewname="posts:post_create"),
+            cls.urls["edit_own"]: reverse_lazy(
                 viewname="posts:post_edit",
                 kwargs={"post_id": cls.own_post.id},
             ),
-            f"/posts/{cls.ones_post.id}/edit/": reverse_lazy(
+            # restricted, GET requests only
+            cls.urls["edit_ones"]: reverse_lazy(
                 viewname="posts:post_edit",
                 kwargs={"post_id": cls.ones_post.id},
             ),
-            f"/posts/{cls.own_post.id}/comment/": reverse_lazy(
+            # restricted, POST requests only
+            cls.urls["comment_on_own"]: reverse_lazy(
                 viewname="posts:add_comment",
                 kwargs={"post_id": cls.own_post.id},
             ),
-            f"/posts/{cls.ones_post.id}/comment/": reverse_lazy(
+            cls.urls["comment_on_ones"]: reverse_lazy(
                 viewname="posts:add_comment",
                 kwargs={"post_id": cls.ones_post.id},
             ),
-            f"/profile/{cls.user.username}/follow/": reverse_lazy(
+            cls.urls["follow_self"]: reverse_lazy(
                 viewname="posts:profile_follow",
                 kwargs={"username": cls.user.username},
             ),
-            f"/profile/{cls.user.username}/unfollow/": reverse_lazy(
+            cls.urls["unfollow_self"]: reverse_lazy(
                 viewname="posts:profile_unfollow",
                 kwargs={"username": cls.user.username},
             ),
-            f"/profile/{cls.other_user.username}/follow/": reverse_lazy(
+            cls.urls["follow_other"]: reverse_lazy(
                 viewname="posts:profile_follow",
                 kwargs={"username": cls.other_user.username},
             ),
-            f"/profile/{cls.other_user.username}/unfollow/": reverse_lazy(
+            cls.urls["unfollow_other"]: reverse_lazy(
                 viewname="posts:profile_unfollow",
                 kwargs={"username": cls.other_user.username},
             ),
-            f"/profile/{cls.passion_of_user.username}/follow/": reverse_lazy(
+            cls.urls["follow_passion"]: reverse_lazy(
                 viewname="posts:profile_follow",
                 kwargs={"username": cls.passion_of_user.username},
             ),
-            f"/profile/{cls.passion_of_user.username}/unfollow/": reverse_lazy(
+            cls.urls["unfollow_passion"]: reverse_lazy(
                 viewname="posts:profile_unfollow",
                 kwargs={"username": cls.passion_of_user.username},
             ),
+        }
+
+        cls.getonly_templates_for_guest_users = {
+            # public, GET requests only
+            cls.urls["index"]: "posts/index.html",
+            cls.urls["group_slug"]: "posts/group_posts.html",
+            cls.urls["profile_self"]: "posts/profile.html",
+            cls.urls["profile_other"]: "posts/profile.html",
+            cls.urls["profile_of_passion"]: "posts/profile.html",
+            cls.urls["post_own"]: "posts/post_detail.html",
+            cls.urls["post_ones"]: "posts/post_detail.html",
+            # private, GET requests only
+            cls.urls["follow"]: "users/login.html",
+            cls.urls["create"]: "users/login.html",
+            cls.urls["edit_own"]: "users/login.html",
+            # restricted, GET requests only
+            cls.urls["edit_ones"]: "users/login.html",
+        }
+
+        cls.postonly_templates_for_guest_users = {
+            # restricted, POST requests only
+            cls.urls["comment_on_own"]: "users/login.html",
+            cls.urls["comment_on_ones"]: "users/login.html",
+            cls.urls["follow_self"]: "users/login.html",
+            cls.urls["unfollow_self"]: "users/login.html",
+            cls.urls["follow_other"]: "users/login.html",
+            cls.urls["unfollow_other"]: "users/login.html",
+            cls.urls["follow_passion"]: "users/login.html",
+            cls.urls["unfollow_passion"]: "users/login.html",
+        }
+
+        cls.getonly_templates_for_auth_users = {
+            # public, GET requests only
+            cls.urls["index"]: "posts/index.html",
+            cls.urls["group_slug"]: "posts/group_posts.html",
+            cls.urls["profile_self"]: "posts/profile.html",
+            cls.urls["profile_other"]: "posts/profile.html",
+            cls.urls["profile_of_passion"]: "posts/profile.html",
+            cls.urls["post_own"]: "posts/post_detail.html",
+            cls.urls["post_ones"]: "posts/post_detail.html",
+            # private, GET requests only
+            cls.urls["follow"]: "posts/follow.html",
+            cls.urls["create"]: "posts/post_create.html",
+            cls.urls["edit_own"]: "posts/post_create.html",
+            # restricted, GET requests only
+            cls.urls["edit_ones"]: "posts/post_detail.html",
+        }
+
+        cls.postonly_templates_for_auth_users = {
+            # restricted, POST requests only
+            cls.urls["comment_on_own"]: "posts/post_detail.html",
+            cls.urls["comment_on_ones"]: "posts/post_detail.html",
+            cls.urls["follow_self"]: "posts/profile.html",
+            cls.urls["unfollow_self"]: "posts/profile.html",
+            cls.urls["follow_other"]: "posts/profile.html",
+            cls.urls["unfollow_other"]: "posts/profile.html",
+            cls.urls["follow_passion"]: "posts/profile.html",
+            cls.urls["unfollow_passion"]: "posts/profile.html",
         }
 
     def setUp(self):
@@ -293,7 +332,7 @@ class PostsURLsTests(TestCase):
         на запросы от гостевых клиентов.
         """
 
-        for path, expected in self.public_paths_status_codes.items():
+        for path, expected in self.public_path_status_codes.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
                     path=path, follow=False,
@@ -304,11 +343,23 @@ class PostsURLsTests(TestCase):
                 )
 
         for path, expected in {
-            **self.private_paths_redirect_guests,
-            **self.restricted_paths_redirect_guests,
+            **self.private_path_redirect_guests,
+            **self.restricted_getonly_redirect_guests,
         }.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
+                    path=path, follow=False,
+                )
+                self.assertRedirects(
+                    response=guest_response,
+                    expected_url=expected,
+                    status_code=HTTPStatus.FOUND,
+                    target_status_code=HTTPStatus.OK,
+                )
+
+        for path, expected in self.restricted_postonly_redirect_guests.items():
+            with self.subTest(path=path):
+                guest_response = self.guest_client.post(
                     path=path, follow=False,
                 )
                 self.assertRedirects(
@@ -324,7 +375,7 @@ class PostsURLsTests(TestCase):
         на запросы от авторизованных клиентов.
         """
 
-        for path, expected in self.public_paths_status_codes.items():
+        for path, expected in self.public_path_status_codes.items():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=False,
@@ -334,7 +385,7 @@ class PostsURLsTests(TestCase):
                     second=expected,
                 )
 
-        for path in self.private_paths_redirect_guests.keys():
+        for path in self.private_path_redirect_guests.keys():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=False,
@@ -344,7 +395,7 @@ class PostsURLsTests(TestCase):
                     second=HTTPStatus.OK,
                 )
 
-        for path, expected in self.restricted_paths_redirect_auth.items():
+        for path, expected in self.restricted_getonly_redirect_auth.items():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=False,
@@ -356,13 +407,35 @@ class PostsURLsTests(TestCase):
                     target_status_code=HTTPStatus.OK,
                 )
 
+        for path, expected in self.restricted_postonly_redirect_auth.items():
+            with self.subTest(path=path):
+                authorized_response = self.authorized_client.post(
+                    path=path, follow=False,
+                )
+                self.assertRedirects(
+                    response=authorized_response,
+                    expected_url=expected,
+                    status_code=HTTPStatus.FOUND,
+                    target_status_code=HTTPStatus.OK,
+                )
+
+    def test_posts_urls_use_correct_names(self):
+        """Проверка имён адресов пространства имён posts"""
+
+        for path, expected in self.path_names.items():
+            with self.subTest(path=path):
+                self.assertEqual(
+                    first=path,
+                    second=expected,
+                )
+
     def test_posts_urls_use_correct_templates_for_guests(self):
         """
-        Проверяются шаблоны, используемые пространством имён posts,
-        при запросах от гостей.
+        Проверка шаблонов адресов пространства имён posts
+        для гостевых клиентов
         """
 
-        for path, expected in self.path_templates_for_guest_users.items():
+        for path, expected in self.getonly_templates_for_guest_users.items():
             with self.subTest(path=path):
                 guest_response = self.guest_client.get(
                     path=path, follow=True,
@@ -372,13 +445,23 @@ class PostsURLsTests(TestCase):
                     template_name=expected,
                 )
 
-    def test_posts_urls_use_correct_templates_for_authorized(self):
+        for path, expected in self.postonly_templates_for_guest_users.items():
+            with self.subTest(path=path):
+                guest_response = self.guest_client.post(
+                    path=path, follow=True,
+                )
+                self.assertTemplateUsed(
+                    response=guest_response,
+                    template_name=expected,
+                )
+
+    def test_posts_urls_use_correct_templates_for_auth(self):
         """
-        Проверяются шаблоны, используемые пространством имён posts,
-        при запросах от авторизованных клиентов.
+        Проверка шаблонов адресов пространства имён posts
+        для авторизованных клиентов
         """
 
-        for path, expected in self.path_templates_for_auth_users.items():
+        for path, expected in self.getonly_templates_for_auth_users.items():
             with self.subTest(path=path):
                 authorized_response = self.authorized_client.get(
                     path=path, follow=True,
@@ -388,15 +471,12 @@ class PostsURLsTests(TestCase):
                     template_name=expected,
                 )
 
-    def test_posts_urls_use_correct_names(self):
-        """
-        Проверяется корректность имён, используемых адресами
-        пространства имён posts.
-        """
-
-        for path, expected_name in self.path_names.items():
+        for path, expected in self.postonly_templates_for_auth_users.items():
             with self.subTest(path=path):
-                self.assertEqual(
-                    first=path,
-                    second=expected_name,
+                authorized_response = self.authorized_client.post(
+                    path=path, follow=True,
+                )
+                self.assertTemplateUsed(
+                    response=authorized_response,
+                    template_name=expected,
                 )

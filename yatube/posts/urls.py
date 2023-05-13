@@ -16,7 +16,7 @@ urlpatterns = [
     path(
         route="group/<slug:slug>/",
         view=views.group_posts,
-        name="group_list",
+        name="group_posts",
     ),
 
     path(

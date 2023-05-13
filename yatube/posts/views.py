@@ -4,6 +4,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_POST
 
 from .constants import CACHE_TIMEOUT_SECONDS
 from .forms import CommentForm, PostForm
@@ -21,7 +22,8 @@ def index(request: HttpRequest) -> HttpResponse:
     Посты идут в порядке убывания даты публикации.
     """
 
-    posts = Post.objects.all()
+    posts = Post.objects.select_related("author", "group").all()
+
     return render(
         request=request,
         template_name="posts/index.html",
@@ -39,8 +41,9 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     на которых подписан пользователь.
     """
 
-    follower = request.user.follower.all().values("author")
-    posts = Post.objects.filter(author__in=follower)
+    posts = Post.objects.filter(
+        author__following__user=request.user
+    ).select_related("author", "group")
 
     return render(
         request=request,
@@ -51,7 +54,6 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     )
 
 
-# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="group_page")
 def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     """
     Страница Сообщества (объекта Group).
@@ -60,7 +62,7 @@ def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     """
 
     group = get_object_or_404(klass=Group, slug=slug)
-    posts = group.posts.all()
+    posts = group.posts.select_related("author").all()
     return render(
         request=request,
         template_name="posts/group_list.html",
@@ -71,7 +73,6 @@ def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     )
 
 
-# @cache_page(timeout=CACHE_TIMEOUT_SECONDS, key_prefix="profile_page")
 def profile(request: HttpRequest, username: str) -> HttpResponse:
     """
     Страница Пользователя (объекта User).
@@ -80,15 +81,11 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     """
 
     author = get_object_or_404(klass=User, username=username)
-    posts = author.posts.all()
+    posts = author.posts.select_related("group").all()
 
-    following = (
-        Follow.objects.filter(
-            user=request.user, author=author,
-        ).exists()
-        if request.user.is_authenticated
-        else False
-    )
+    following = request.user.is_authenticated and Follow.objects.filter(
+        user=request.user, author=author,
+    ).exists()
 
     return render(
         request=request,
@@ -104,8 +101,12 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
 def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
     """Страница отдельного поста (объекта Post)."""
 
-    post = get_object_or_404(klass=Post, id=post_id)
+    post = get_object_or_404(
+        klass=Post.objects.select_related("author", "group"),
+        id=post_id,
+    )
     form = CommentForm()
+    comments = post.comments.select_related("author").all()
 
     return render(
         request=request,
@@ -113,6 +114,7 @@ def post_detail(request: HttpRequest, post_id: int) -> HttpResponse:
         context={
             "post": post,
             "form": form,
+            "comments": comments,
         },
     )
 
@@ -151,7 +153,10 @@ def post_create(request: HttpRequest) -> HttpResponse:
 def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
     """Редактировать пост (объект Post) через интерфейс проекта."""
 
-    post = get_object_or_404(klass=Post, id=post_id)
+    post = get_object_or_404(
+        klass=Post.objects.select_related("author", "group"),
+        id=post_id,
+    )
     form = PostForm(
         data=(request.POST or None),
         files=(request.FILES or None),
@@ -184,13 +189,17 @@ def post_edit(request: HttpRequest, post_id: int) -> HttpResponse:
 
 # TODO fix redirection target after login
 @login_required
+@require_POST
 def add_comment(request: HttpRequest, post_id: int) -> HttpResponse:
     """
     Добавить коментарий (объект comment) под постом (объектом Post)
     через интерфейс проекта.
     """
 
-    post = get_object_or_404(klass=Post, id=post_id)
+    post = get_object_or_404(
+        klass=Post.objects.select_related("author", "group"),
+        id=post_id,
+    )
     form = CommentForm(
         data=(request.POST or None)
     )
@@ -211,6 +220,10 @@ def add_comment(request: HttpRequest, post_id: int) -> HttpResponse:
 
 # TODO fix redirection target after login
 @login_required
+# @require_POST
+# декоратор убрал потому что с ним не срабатывают
+# тесты Практикума - что показалось мне странным;
+# вроде же GET-запросами не надо совершать модификации над данными??
 def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
     """
     Подписаться (создать объект Follow) на автора (объекта User)
@@ -219,10 +232,10 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
 
     author = get_object_or_404(klass=User, username=username)
 
-    if request.user != author and not Follow.objects.filter(
-        user=request.user, author=author,
-    ).exists():
-        Follow.objects.create(user=request.user, author=author)
+    if request.user != author:
+        Follow.objects.get_or_create(
+            user=request.user, author=author,
+        )
 
     return redirect(to=reverse_lazy(viewname="posts:profile",
                                     kwargs={"username": username}))
@@ -230,6 +243,8 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
 
 # TODO fix redirection target after login
 @login_required
+# @require_POST
+# аналогично симметричной функции profile_follow выше
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     """
     Отписаться (удалить объект Follow) от автора (объекта User)
@@ -238,10 +253,7 @@ def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
 
     author = get_object_or_404(klass=User, username=username)
 
-    if request.user != author and Follow.objects.filter(
-        user=request.user, author=author,
-    ).exists():
-        Follow.objects.filter(user=request.user, author=author).delete()
+    Follow.objects.filter(user=request.user, author=author).delete()
 
     return redirect(to=reverse_lazy(viewname="posts:profile",
                                     kwargs={"username": username}))
